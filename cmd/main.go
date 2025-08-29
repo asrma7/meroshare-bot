@@ -40,10 +40,12 @@ func main() {
 	r.Use(utils.NewCors())
 
 	userRepo := repositories.NewUserRepository(db)
+	accountRepo := repositories.NewAccountRepository(db)
 
 	authHandler := handlers.NewAuthHandler(services.NewAuthService(cfg, &userRepo, redisClient))
+	accountHandler := handlers.NewAccountHandler(services.NewAccountService(&accountRepo))
 
-	routes.RegisterRoutes(r, authHandler)
+	routes.RegisterRoutes(r, authHandler, accountHandler)
 
 	logs.Info("Starting server", map[string]any{
 		"port": cfg.Port,
