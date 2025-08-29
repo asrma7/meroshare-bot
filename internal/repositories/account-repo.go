@@ -9,7 +9,7 @@ import (
 type AccountRepository interface {
 	CreateAccount(account *models.Account) (uuid.UUID, error)
 	GetAccountByID(id uuid.UUID) (*models.Account, error)
-	GetAccountByUserID(userID uuid.UUID) (*models.Account, error)
+	GetAccountsByUserID(userID uuid.UUID) ([]models.Account, error)
 	GetAllAccounts() ([]models.Account, error)
 	UpdateAccount(account *models.Account) error
 	DeleteAccount(id uuid.UUID) error
@@ -38,12 +38,12 @@ func (r *accountRepository) GetAccountByID(id uuid.UUID) (*models.Account, error
 	return &account, nil
 }
 
-func (r *accountRepository) GetAccountByUserID(userID uuid.UUID) (*models.Account, error) {
-	var account models.Account
-	if err := r.db.First(&account, "user_id = ?", userID).Error; err != nil {
+func (r *accountRepository) GetAccountsByUserID(userID uuid.UUID) ([]models.Account, error) {
+	var accounts []models.Account
+	if err := r.db.Where("user_id = ?", userID).Find(&accounts).Error; err != nil {
 		return nil, err
 	}
-	return &account, nil
+	return accounts, nil
 }
 
 func (r *accountRepository) GetAllAccounts() ([]models.Account, error) {

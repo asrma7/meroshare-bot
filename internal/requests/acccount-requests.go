@@ -1,6 +1,6 @@
 package requests
 
-type CreateAccountRequest struct {
+type AccountRequest struct {
 	ClientId       uint16 `json:"client_id" binding:"required"`
 	Username       string `json:"username" binding:"required"`
 	Password       string `json:"password" binding:"required"`

@@ -9,7 +9,7 @@ import (
 type AccountService interface {
 	CreateAccount(account *models.Account) (uuid.UUID, error)
 	GetAccountByID(id uuid.UUID) (*models.Account, error)
-	GetAccountByUserID(userID uuid.UUID) (*models.Account, error)
+	GetAccountsByUserID(userID uuid.UUID) ([]models.Account, error)
 	GetAllAccounts() ([]models.Account, error)
 	UpdateAccount(account *models.Account) error
 	DeleteAccount(id uuid.UUID) error
@@ -31,8 +31,8 @@ func (s *accountService) GetAccountByID(id uuid.UUID) (*models.Account, error) {
 	return s.repo.GetAccountByID(id)
 }
 
-func (s *accountService) GetAccountByUserID(userID uuid.UUID) (*models.Account, error) {
-	return s.repo.GetAccountByUserID(userID)
+func (s *accountService) GetAccountsByUserID(userID uuid.UUID) ([]models.Account, error) {
+	return s.repo.GetAccountsByUserID(userID)
 }
 
 func (s *accountService) GetAllAccounts() ([]models.Account, error) {
