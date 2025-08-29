@@ -87,7 +87,7 @@ func fetchBankDetails(authorization string, bankId string) ([]responses.BankDeta
 }
 
 func (h *accountHandler) CreateAccount(c *gin.Context) {
-	userID := c.MustGet("userID").(string)
+	userID := c.GetString("userID")
 	if userID == "" {
 		errResp := errors.ErrorResponse{
 			Type:    "UNAUTHORIZED",
@@ -208,7 +208,7 @@ func (h *accountHandler) GetAccountByID(c *gin.Context) {
 		return
 	}
 
-	userID := c.MustGet("userID").(string)
+	userID := c.GetString("userID")
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
@@ -235,7 +235,7 @@ func (h *accountHandler) GetAccountByID(c *gin.Context) {
 }
 
 func (h *accountHandler) GetAccountsByUserID(c *gin.Context) {
-	userID := c.MustGet("userID").(string)
+	userID := c.GetString("userID")
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
@@ -257,7 +257,7 @@ func (h *accountHandler) GetAccountsByUserID(c *gin.Context) {
 }
 
 func (h *accountHandler) UpdateAccount(c *gin.Context) {
-	userID := c.MustGet("userID").(string)
+	userID := c.GetString("userID")
 	if userID == "" {
 		errResp := errors.ErrorResponse{
 			Type:    "UNAUTHORIZED",
@@ -390,18 +390,24 @@ func (h *accountHandler) UpdateAccount(c *gin.Context) {
 }
 
 func (h *accountHandler) DeleteAccount(c *gin.Context) {
-	userID := c.Param("user_id")
+	userID := c.GetString("userID")
 	if userID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "User ID is required"})
+		errResp := errors.ErrorResponse{
+			Type:    "UNAUTHORIZED",
+			Message: "User ID not found in context",
+		}
+		c.JSON(http.StatusUnauthorized, errResp)
 		return
 	}
-
 	userIDParsed, err := uuid.Parse(userID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid User ID"})
+		errResp := errors.ErrorResponse{
+			Type:    "VALIDATION_ERROR",
+			Message: "Invalid user ID format",
+		}
+		c.JSON(http.StatusBadRequest, errResp)
 		return
 	}
-
 	accountId := c.Param("id")
 	if accountId == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Account ID is required"})
