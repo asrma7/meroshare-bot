@@ -40,6 +40,8 @@ func ConnectDB(cfg *config.Config) (*gorm.DB, error) {
 	if err := db.AutoMigrate(
 		&models.User{},
 		&models.Account{},
+		&models.AppliedShare{},
+		&models.AppliedShareError{},
 	); err != nil {
 		return nil, err
 	}

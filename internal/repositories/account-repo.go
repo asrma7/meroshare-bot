@@ -15,6 +15,7 @@ type AccountRepository interface {
 	GetAllAccounts() ([]models.Account, error)
 	UpdateAccount(account *models.Account) error
 	DeleteAccount(id uuid.UUID) error
+	SetAccountStatus(id uuid.UUID, status string) error
 }
 
 type accountRepository struct {
@@ -69,4 +70,8 @@ func (r *accountRepository) DeleteAccount(id uuid.UUID) error {
 		return err
 	}
 	return nil
+}
+
+func (r *accountRepository) SetAccountStatus(id uuid.UUID, status string) error {
+	return r.db.Model(&models.Account{}).Where("id = ?", id).Update("status", status).Error
 }

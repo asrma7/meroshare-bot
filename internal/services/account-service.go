@@ -3,8 +3,10 @@ package services
 import (
 	"bytes"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/asrma7/meroshare-bot/internal/models"
 	"github.com/asrma7/meroshare-bot/internal/repositories"
@@ -22,6 +24,7 @@ type AccountService interface {
 	GetAllAccounts() ([]models.Account, error)
 	UpdateAccount(account *models.Account) error
 	DeleteAccount(id uuid.UUID) error
+	SetAccountStatus(id uuid.UUID, status string) error
 }
 
 type accountService struct {
@@ -58,6 +61,19 @@ func (s *accountService) LoginAccount(clientId uint16, username, password string
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusUnauthorized {
+			//parse xml
+			var xmlErr struct {
+				Message string `xml:"message"`
+			}
+			if err := xml.NewDecoder(resp.Body).Decode(&xmlErr); err != nil {
+				return "", fmt.Errorf("failed to login account")
+			}
+			if strings.HasPrefix(xmlErr.Message, "Invalid password") {
+				return "", fmt.Errorf("invalid credentials")
+			}
+			return "", fmt.Errorf("unauthorized: %s", xmlErr.Message)
+		}
 		return "", fmt.Errorf("failed to login account")
 	}
 
@@ -143,4 +159,8 @@ func (s *accountService) UpdateAccount(account *models.Account) error {
 
 func (s *accountService) DeleteAccount(id uuid.UUID) error {
 	return s.repo.DeleteAccount(id)
+}
+
+func (s *accountService) SetAccountStatus(id uuid.UUID, status string) error {
+	return s.repo.SetAccountStatus(id, status)
 }

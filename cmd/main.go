@@ -11,6 +11,7 @@ import (
 	"github.com/asrma7/meroshare-bot/pkg/redis"
 	"github.com/asrma7/meroshare-bot/pkg/utils"
 	"github.com/gin-gonic/gin"
+	"github.com/robfig/cron/v3"
 )
 
 func main() {
@@ -41,11 +42,23 @@ func main() {
 
 	userRepo := repositories.NewUserRepository(db)
 	accountRepo := repositories.NewAccountRepository(db)
+	shareRepo := repositories.NewShareRepository(db)
 
-	authHandler := handlers.NewAuthHandler(services.NewAuthService(cfg, &userRepo, redisClient))
-	accountHandler := handlers.NewAccountHandler(services.NewAccountService(&accountRepo))
+	authService := services.NewAuthService(cfg, &userRepo, redisClient)
+	accountService := services.NewAccountService(&accountRepo)
+	shareService := services.NewShareService(&shareRepo)
 
-	routes.RegisterRoutes(r, authHandler, accountHandler)
+	authHandler := handlers.NewAuthHandler(authService)
+	accountHandler := handlers.NewAccountHandler(accountService)
+	shareHandler := handlers.NewShareHandler(shareService, accountService)
+
+	routes.RegisterRoutes(r, authHandler, accountHandler, shareHandler)
+
+	c := cron.New()
+	// Run shareHandler.ApplyShare every day
+	// c.AddFunc("0 0 * * *", shareHandler.ApplyShare)
+	c.Start()
+	// shareHandler.ApplyShare()
 
 	logs.Info("Starting server", map[string]any{
 		"port": cfg.Port,
