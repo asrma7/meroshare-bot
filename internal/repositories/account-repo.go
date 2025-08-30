@@ -1,6 +1,8 @@
 package repositories
 
 import (
+	"time"
+
 	"github.com/asrma7/meroshare-bot/internal/models"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -32,7 +34,7 @@ func (r *accountRepository) CreateAccount(account *models.Account) (uuid.UUID, e
 
 func (r *accountRepository) GetAccountByID(id uuid.UUID) (*models.Account, error) {
 	var account models.Account
-	if err := r.db.First(&account, "id = ?", id).Error; err != nil {
+	if err := r.db.Where("id = ?", id).Where("deleted_at IS NULL").First(&account).Error; err != nil {
 		return nil, err
 	}
 	return &account, nil
@@ -40,7 +42,7 @@ func (r *accountRepository) GetAccountByID(id uuid.UUID) (*models.Account, error
 
 func (r *accountRepository) GetAccountsByUserID(userID uuid.UUID) ([]models.Account, error) {
 	var accounts []models.Account
-	if err := r.db.Where("user_id = ?", userID).Find(&accounts).Error; err != nil {
+	if err := r.db.Where("user_id = ?", userID).Where("deleted_at IS NULL").Find(&accounts).Error; err != nil {
 		return nil, err
 	}
 	return accounts, nil
@@ -48,7 +50,7 @@ func (r *accountRepository) GetAccountsByUserID(userID uuid.UUID) ([]models.Acco
 
 func (r *accountRepository) GetAllAccounts() ([]models.Account, error) {
 	var accounts []models.Account
-	if err := r.db.Find(&accounts).Error; err != nil {
+	if err := r.db.Where("deleted_at IS NULL").Find(&accounts).Error; err != nil {
 		return nil, err
 	}
 	return accounts, nil
@@ -62,7 +64,8 @@ func (r *accountRepository) UpdateAccount(account *models.Account) error {
 }
 
 func (r *accountRepository) DeleteAccount(id uuid.UUID) error {
-	if err := r.db.Delete(&models.Account{}, id).Error; err != nil {
+	// Soft delete: set DeletedAt to current time
+	if err := r.db.Model(&models.Account{}).Where("id = ?", id).Update("deleted_at", gorm.DeletedAt{Time: time.Now(), Valid: true}).Error; err != nil {
 		return err
 	}
 	return nil
