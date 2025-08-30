@@ -141,16 +141,32 @@ func (s *shareService) ApplyForShare(account models.Account, share responses.App
 
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode == http.StatusConflict {
-			var xmlErr struct {
-				Message string `xml:"message"`
+			if resp.Header.Get("Content-Type") == "application/xml" || strings.Contains(resp.Header.Get("Content-Type"), "application/xml") {
+				var xmlErr struct {
+					Message string `xml:"message"`
+				}
+				if err := xml.NewDecoder(resp.Body).Decode(&xmlErr); err != nil {
+					return nil, fmt.Errorf("failed to apply for share: %d", resp.StatusCode)
+				}
+				if xmlErr.Message == "You have entered wrong transaction PIN." {
+					return nil, fmt.Errorf("invalid transaction PIN")
+				}
+				return nil, fmt.Errorf("conflict: %s", xmlErr.Message)
 			}
-			if err := xml.NewDecoder(resp.Body).Decode(&xmlErr); err != nil {
-				return nil, fmt.Errorf("failed to apply for share: %d", resp.StatusCode)
+			if resp.Header.Get("Content-Type") == "application/json" || strings.Contains(resp.Header.Get("Content-Type"), "application/json") {
+				var jsonErr struct {
+					Message string `json:"message"`
+				}
+				if err := json.NewDecoder(resp.Body).Decode(&jsonErr); err != nil {
+					return nil, fmt.Errorf("failed to apply for share: %d", resp.StatusCode)
+				}
+				if jsonErr.Message == "Application in process. Please try again later." {
+					fmt.Println("Application in process. Skipping duplicate application.")
+					return nil, nil
+				}
+				return nil, fmt.Errorf("conflict: %s", jsonErr.Message)
 			}
-			if xmlErr.Message == "You have entered wrong transaction PIN." {
-				return nil, fmt.Errorf("invalid transaction PIN")
-			}
-			return nil, fmt.Errorf("conflict: %s", xmlErr.Message)
+			return nil, fmt.Errorf("failed to apply for share: %d", resp.StatusCode)
 		}
 		return nil, fmt.Errorf("failed to apply for share: %d", resp.StatusCode)
 	}

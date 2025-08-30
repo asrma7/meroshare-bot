@@ -62,19 +62,22 @@ func (s *accountService) LoginAccount(clientId uint16, username, password string
 
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode == http.StatusUnauthorized {
-			//parse xml
-			var xmlErr struct {
-				Message string `xml:"message"`
+			responseType := resp.Header.Get("Content-Type")
+			if responseType == "application/xml" || strings.Contains(responseType, "application/xml") {
+				var xmlErr struct {
+					Message string `xml:"message"`
+				}
+				if err := xml.NewDecoder(resp.Body).Decode(&xmlErr); err != nil {
+					return "", fmt.Errorf("failed to login account")
+				}
+				if strings.HasPrefix(xmlErr.Message, "Invalid password") {
+					return "", fmt.Errorf("invalid credentials")
+				}
+				return "", fmt.Errorf("unauthorized: %s", xmlErr.Message)
 			}
-			if err := xml.NewDecoder(resp.Body).Decode(&xmlErr); err != nil {
-				return "", fmt.Errorf("failed to login account")
-			}
-			if strings.HasPrefix(xmlErr.Message, "Invalid password") {
-				return "", fmt.Errorf("invalid credentials")
-			}
-			return "", fmt.Errorf("unauthorized: %s", xmlErr.Message)
+			return "", fmt.Errorf("failed to login account")
 		}
-		return "", fmt.Errorf("failed to login account")
+		return "", fmt.Errorf("failed to login account: %d", resp.StatusCode)
 	}
 
 	authorization := resp.Header.Get("Authorization")
