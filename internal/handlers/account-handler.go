@@ -278,6 +278,7 @@ func (h *accountHandler) UpdateAccount(c *gin.Context) {
 		DMATExpiryDate:     userDetails.DematExpiryDate,
 		PasswordExpiryDate: userDetails.PasswordExpiryDate,
 		ExpiredDate:        userDetails.ExpiredDate,
+		Status:             "active",
 	}
 
 	err = h.accountService.UpdateAccount(&updatedAccount)
