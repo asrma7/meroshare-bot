@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -34,58 +32,6 @@ func NewAccountHandler(accountService services.AccountService) AccountHandler {
 	}
 }
 
-func fetchUserDetails(authorization string) (responses.UserDetails, error) {
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", "https://webbackend.cdsc.com.np/api/meroShare/ownDetail/", nil)
-	if err != nil {
-		return responses.UserDetails{}, err
-	}
-	req.Header.Set("Authorization", authorization)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return responses.UserDetails{}, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return responses.UserDetails{}, fmt.Errorf("failed to fetch user details")
-	}
-
-	var userDetails responses.UserDetails
-	if err := json.NewDecoder(resp.Body).Decode(&userDetails); err != nil {
-		return responses.UserDetails{}, err
-	}
-
-	return userDetails, nil
-}
-
-func fetchBankDetails(authorization string, bankId string) ([]responses.BankDetails, error) {
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://webbackend.cdsc.com.np/api/meroShare/bank/%s", bankId), nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", authorization)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch bank details")
-	}
-
-	var bankDetails []responses.BankDetails
-	if err := json.NewDecoder(resp.Body).Decode(&bankDetails); err != nil {
-		return nil, err
-	}
-
-	return bankDetails, nil
-}
-
 func (h *accountHandler) CreateAccount(c *gin.Context) {
 	userID := c.GetString("userID")
 	if userID == "" {
@@ -110,33 +56,10 @@ func (h *accountHandler) CreateAccount(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	reqData := map[string]string{
-		"clientId": fmt.Sprintf("%d", req.ClientId),
-		"username": req.Username,
-		"password": req.Password,
-	}
 
-	jsonData, err := json.Marshal(reqData)
+	authorization, err := h.accountService.LoginAccount(req.ClientId, req.Username, req.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	resp, err := http.Post("https://webbackend.cdsc.com.np/api/meroShare/auth/", "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create account"})
-		return
-	}
-
-	authorization := resp.Header.Get("Authorization")
-	if authorization == "" {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to login account"})
 		return
 	}
 
@@ -148,13 +71,13 @@ func (h *accountHandler) CreateAccount(c *gin.Context) {
 
 	g.Go(func() error {
 		var err error
-		userDetails, err = fetchUserDetails(authorization)
+		userDetails, err = h.accountService.FetchUserDetails(authorization)
 		return err
 	})
 
 	g.Go(func() error {
 		var err error
-		bankDetails, err = fetchBankDetails(authorization, fmt.Sprintf("%v", req.BankId))
+		bankDetails, err = h.accountService.FetchBankDetails(authorization, fmt.Sprintf("%v", req.BankId))
 		return err
 	})
 
@@ -303,33 +226,10 @@ func (h *accountHandler) UpdateAccount(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	reqData := map[string]string{
-		"clientId": fmt.Sprintf("%d", req.ClientId),
-		"username": req.Username,
-		"password": req.Password,
-	}
 
-	jsonData, err := json.Marshal(reqData)
+	authorization, err := h.accountService.LoginAccount(req.ClientId, req.Username, req.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	resp, err := http.Post("https://webbackend.cdsc.com.np/api/meroShare/auth/", "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create account"})
-		return
-	}
-
-	authorization := resp.Header.Get("Authorization")
-	if authorization == "" {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to login account"})
 		return
 	}
 
@@ -341,13 +241,13 @@ func (h *accountHandler) UpdateAccount(c *gin.Context) {
 
 	g.Go(func() error {
 		var err error
-		userDetails, err = fetchUserDetails(authorization)
+		userDetails, err = h.accountService.FetchUserDetails(authorization)
 		return err
 	})
 
 	g.Go(func() error {
 		var err error
-		bankDetails, err = fetchBankDetails(authorization, fmt.Sprintf("%v", req.BankId))
+		bankDetails, err = h.accountService.FetchBankDetails(authorization, fmt.Sprintf("%v", req.BankId))
 		return err
 	})
 
