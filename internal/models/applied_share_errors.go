@@ -10,6 +10,7 @@ import (
 type AppliedShareError struct {
 	ID             uuid.UUID `gorm:"type:uuid;primaryKey"`
 	UserID         uuid.UUID `gorm:"type:uuid;not null;index"`
+	AccountID      uuid.UUID `gorm:"type:uuid;not null;index"`
 	AppliedShareID uuid.UUID `gorm:"type:uuid;not null;index"`
 	Message        string    `gorm:"not null"`
 	Seen           bool      `gorm:"default:false"`

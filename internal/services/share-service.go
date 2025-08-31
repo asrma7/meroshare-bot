@@ -13,13 +13,15 @@ import (
 	"github.com/asrma7/meroshare-bot/internal/repositories"
 	"github.com/asrma7/meroshare-bot/internal/requests"
 	"github.com/asrma7/meroshare-bot/internal/responses"
+	"github.com/google/uuid"
 )
 
 type ShareService interface {
-	AddAppliedShare(share *models.AppliedShare) error
+	AddAppliedShare(share *models.AppliedShare) (uuid.UUID, error)
 	AddApplyShareError(error *models.AppliedShareError) error
 	GetAppliedSharesByUserID(userID string) ([]models.AppliedShare, error)
 	CheckIfShareAlreadyApplied(accountID string, companyShareID string) (bool, error)
+	GetAppliedShareByID(id string) (*models.AppliedShare, *models.AppliedShareError, error)
 	GetAppliedShareErrorsByUserID(userID string) ([]models.AppliedShareError, error)
 	GetUnseenShareErrorsByUserID(userID string) ([]models.AppliedShareError, error)
 	MarkShareErrorsAsSeenByUserID(userID string) error
@@ -35,7 +37,7 @@ func NewShareService(repo *repositories.ShareRepository) ShareService {
 	return &shareService{repo: *repo}
 }
 
-func (s *shareService) AddAppliedShare(share *models.AppliedShare) error {
+func (s *shareService) AddAppliedShare(share *models.AppliedShare) (uuid.UUID, error) {
 	return s.repo.AddAppliedShare(share)
 }
 
@@ -45,6 +47,15 @@ func (s *shareService) AddApplyShareError(error *models.AppliedShareError) error
 
 func (s *shareService) GetAppliedSharesByUserID(userID string) ([]models.AppliedShare, error) {
 	return s.repo.GetAppliedSharesByUserID(userID)
+}
+
+func (s *shareService) GetAppliedShareByID(id string) (*models.AppliedShare, *models.AppliedShareError, error) {
+	share, err := s.repo.GetAppliedShareByID(id)
+	errors, err := s.repo.GetAppliedShareErrorsByAppliedShareID(id)
+	if err != nil {
+		return nil, nil, err
+	}
+	return share, errors, nil
 }
 
 func (s *shareService) CheckIfShareAlreadyApplied(accountID string, companyShareID string) (bool, error) {

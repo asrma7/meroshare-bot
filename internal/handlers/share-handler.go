@@ -17,6 +17,7 @@ import (
 type ShareHandler interface {
 	GetAppliedShares(c *gin.Context)
 	GetAppliedShareErrors(c *gin.Context)
+	GetAppliedShareByID(c *gin.Context)
 	ApplyShare()
 }
 
@@ -74,6 +75,27 @@ func (h *shareHandler) GetAppliedShareErrors(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "success", "applied_share_errors": appliedShareErrors})
 }
 
+func (h *shareHandler) GetAppliedShareByID(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		errResp := errors.ErrorResponse{
+			Type:    "BAD_REQUEST",
+			Message: "Invalid share ID",
+		}
+		c.JSON(http.StatusBadRequest, errResp)
+		return
+	}
+
+	appliedShare, appliedShareError, err := h.shareService.GetAppliedShareByID(id)
+	if err != nil {
+		errorResp, statusCode := errors.GetErrorResponse(err)
+		c.JSON(statusCode, errorResp)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "success", "applied_share": appliedShare, "applied_share_error": appliedShareError})
+}
+
 func (h *shareHandler) ApplyShare() {
 	allAccounts, err := h.accountService.GetAllAccounts()
 	if err != nil {
@@ -126,12 +148,11 @@ func (h *shareHandler) ApplyShare() {
 			if share.Action == "" && !alreadyApplied {
 				result, err := h.shareService.ApplyForShare(account, share, authorization)
 				if err != nil {
-					if err.Error() == "invalid transaction PIN" {
+					if err.Error() == "conflict: You have entered wrong transaction PIN." {
 						h.accountService.SetAccountStatus(account.ID, "invalid_pin")
-						continue
 					}
 					logs.Error("Failed to apply for share", map[string]any{"error": err})
-					h.shareService.AddAppliedShare(&models.AppliedShare{
+					appliedShareId, er := h.shareService.AddAppliedShare(&models.AppliedShare{
 						UserID:         account.UserID,
 						AccountID:      account.ID,
 						CompanyName:    share.CompanyName,
@@ -143,9 +164,13 @@ func (h *shareHandler) ApplyShare() {
 						SubGroup:       share.SubGroup,
 						Status:         "failed",
 					})
+					if er != nil {
+						logs.Error("Failed to add applied share", map[string]any{"error": er})
+					}
 					h.shareService.AddApplyShareError(&models.AppliedShareError{
 						UserID:         account.UserID,
-						AppliedShareID: account.ID,
+						AccountID:      account.ID,
+						AppliedShareID: appliedShareId,
 						Message:        err.Error(),
 					})
 					continue

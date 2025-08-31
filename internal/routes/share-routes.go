@@ -10,4 +10,5 @@ func RegisterShareRoutes(r *gin.RouterGroup, authHandler handlers.AuthHandler, s
 	r.Use(middlewares.AuthMiddleware(authHandler))
 	r.GET("/shares/applied", shareHandler.GetAppliedShares)
 	r.GET("/shares/errors", shareHandler.GetAppliedShareErrors)
+	r.GET("/shares/:id", shareHandler.GetAppliedShareByID)
 }
