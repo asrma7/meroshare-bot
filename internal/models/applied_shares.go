@@ -10,6 +10,7 @@ import (
 type AppliedShare struct {
 	ID             uuid.UUID `gorm:"type:uuid;primaryKey"`
 	UserID         uuid.UUID `gorm:"type:uuid;not null;index"`
+	AccountID      uuid.UUID `gorm:"type:uuid;not null;index"`
 	CompanyName    string    `gorm:"not null"`
 	CompanyShareID uint16    `gorm:"not null"`
 	Scrip          string    `gorm:"not null"`

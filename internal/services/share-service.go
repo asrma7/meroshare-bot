@@ -19,7 +19,10 @@ type ShareService interface {
 	AddAppliedShare(share *models.AppliedShare) error
 	AddApplyShareError(error *models.AppliedShareError) error
 	GetAppliedSharesByUserID(userID string) ([]models.AppliedShare, error)
+	CheckIfShareAlreadyApplied(accountID string, companyShareID string) (bool, error)
 	GetAppliedShareErrorsByUserID(userID string) ([]models.AppliedShareError, error)
+	GetUnseenShareErrorsByUserID(userID string) ([]models.AppliedShareError, error)
+	MarkShareErrorsAsSeenByUserID(userID string) error
 	FetchApplicableShares(authorization string) (responses.ApplicableSharesResponse, error)
 	ApplyForShare(account models.Account, share responses.ApplicableShare, authorization string) (map[string]any, error)
 }
@@ -44,8 +47,27 @@ func (s *shareService) GetAppliedSharesByUserID(userID string) ([]models.Applied
 	return s.repo.GetAppliedSharesByUserID(userID)
 }
 
+func (s *shareService) CheckIfShareAlreadyApplied(accountID string, companyShareID string) (bool, error) {
+	share, err := s.repo.GetAppliedShareByAccountIDAndCompanyShareID(accountID, companyShareID)
+	if err != nil {
+		if strings.Contains(err.Error(), "record not found") {
+			return false, nil
+		}
+		return false, err
+	}
+	return share != nil, nil
+}
+
 func (s *shareService) GetAppliedShareErrorsByUserID(userID string) ([]models.AppliedShareError, error) {
 	return s.repo.GetAppliedShareErrorsByUserID(userID)
+}
+
+func (s *shareService) GetUnseenShareErrorsByUserID(userID string) ([]models.AppliedShareError, error) {
+	return s.repo.GetUnseenShareErrorsByUserID(userID)
+}
+
+func (s *shareService) MarkShareErrorsAsSeenByUserID(userID string) error {
+	return s.repo.MarkShareErrorsAsSeenByUserID(userID)
 }
 
 func (s *shareService) FetchApplicableShares(authorization string) (responses.ApplicableSharesResponse, error) {
@@ -139,7 +161,7 @@ func (s *shareService) ApplyForShare(account models.Account, share responses.App
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusCreated {
 		if resp.StatusCode == http.StatusConflict {
 			if resp.Header.Get("Content-Type") == "application/xml" || strings.Contains(resp.Header.Get("Content-Type"), "application/xml") {
 				var xmlErr struct {

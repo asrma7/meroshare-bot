@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/asrma7/meroshare-bot/internal/models"
 	"github.com/asrma7/meroshare-bot/internal/services"
 	"github.com/asrma7/meroshare-bot/pkg/errors"
 	"github.com/asrma7/meroshare-bot/pkg/logs"
@@ -116,16 +118,52 @@ func (h *shareHandler) ApplyShare() {
 			continue
 		}
 		for _, share := range applicableShares.Shares {
-			result, err := h.shareService.ApplyForShare(account, share, authorization)
+			alreadyApplied, err := h.shareService.CheckIfShareAlreadyApplied(account.ID.String(), fmt.Sprintf("%d", share.CompanyShareID))
 			if err != nil {
-				if err.Error() == "invalid transaction PIN" {
-					h.accountService.SetAccountStatus(account.ID, "invalid_pin")
-					continue
-				}
-				logs.Error("Failed to apply for share", map[string]any{"error": err})
+				logs.Error("Failed to check if share already applied", map[string]any{"error": err})
 				continue
 			}
-			logs.Info("Successfully applied for share", map[string]any{"result": result})
+			if share.Action == "" && !alreadyApplied {
+				result, err := h.shareService.ApplyForShare(account, share, authorization)
+				if err != nil {
+					if err.Error() == "invalid transaction PIN" {
+						h.accountService.SetAccountStatus(account.ID, "invalid_pin")
+						continue
+					}
+					logs.Error("Failed to apply for share", map[string]any{"error": err})
+					h.shareService.AddAppliedShare(&models.AppliedShare{
+						UserID:         account.UserID,
+						AccountID:      account.ID,
+						CompanyName:    share.CompanyName,
+						CompanyShareID: share.CompanyShareID,
+						Scrip:          share.Scrip,
+						AppliedKitta:   account.PreferredKitta,
+						ShareGroupName: share.ShareGroupName,
+						ShareTypeName:  share.ShareTypeName,
+						SubGroup:       share.SubGroup,
+						Status:         "failed",
+					})
+					h.shareService.AddApplyShareError(&models.AppliedShareError{
+						UserID:         account.UserID,
+						AppliedShareID: account.ID,
+						Message:        err.Error(),
+					})
+					continue
+				}
+				logs.Info("Successfully applied for share", map[string]any{"result": result, "account_id": account.ID, "share_id": share.CompanyShareID})
+				h.shareService.AddAppliedShare(&models.AppliedShare{
+					UserID:         account.UserID,
+					AccountID:      account.ID,
+					CompanyName:    share.CompanyName,
+					CompanyShareID: share.CompanyShareID,
+					Scrip:          share.Scrip,
+					AppliedKitta:   account.PreferredKitta,
+					ShareGroupName: share.ShareGroupName,
+					ShareTypeName:  share.ShareTypeName,
+					SubGroup:       share.SubGroup,
+					Status:         "applied",
+				})
+			}
 		}
 	}
 }
