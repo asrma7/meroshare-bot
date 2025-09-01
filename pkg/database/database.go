@@ -7,6 +7,7 @@ import (
 
 	"github.com/asrma7/meroshare-bot/internal/models"
 	"github.com/asrma7/meroshare-bot/pkg/config"
+	"github.com/asrma7/meroshare-bot/pkg/logs"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -45,5 +46,7 @@ func ConnectDB(cfg *config.Config) (*gorm.DB, error) {
 	); err != nil {
 		return nil, err
 	}
+
+	logs.Info("Database connection established", nil)
 	return db, nil
 }
