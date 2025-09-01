@@ -145,7 +145,7 @@ func (h *shareHandler) ApplyShare() {
 				logs.Error("Failed to check if share already applied", map[string]any{"error": err})
 				continue
 			}
-			if share.Action == "" && !alreadyApplied {
+			if share.Action == "" && share.ShareGroupName == "Ordinary Shares" && !alreadyApplied {
 				result, err := h.shareService.ApplyForShare(account, share, authorization)
 				if err != nil {
 					if err.Error() == "conflict: You have entered wrong transaction PIN." {

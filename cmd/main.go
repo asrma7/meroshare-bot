@@ -55,10 +55,8 @@ func main() {
 	routes.RegisterRoutes(r, authHandler, accountHandler, shareHandler)
 
 	c := cron.New()
-	// Run shareHandler.ApplyShare every day
-	// c.AddFunc("0 0 * * *", shareHandler.ApplyShare)
+	c.AddFunc("0 0 * * *", shareHandler.ApplyShare)
 	c.Start()
-	// shareHandler.ApplyShare()
 
 	logs.Info("Starting server", map[string]any{
 		"port": cfg.Port,
