@@ -1,22 +1,5 @@
 package responses
 
-//	{
-//	    "object": [
-//	        {
-//	            "companyShareId": 710,
-//	            "subGroup": "For General Public",
-//	            "scrip": "BCTL",
-//	            "companyName": "Bandipur Cable Car and Tourism Ltd",
-//	            "shareTypeName": "IPO",
-//	            "shareGroupName": "Ordinary Shares",
-//	            "statusName": "CREATE_APPROVE",
-//	            "action": "inProcess",
-//	            "issueOpenDate": "Aug 27, 2025 10:00:00 AM",
-//	            "issueCloseDate": "Aug 31, 2025 5:00:00 PM"
-//	        }
-//	    ],
-//	    "totalCount": 0
-//	}
 type ApplicableShare struct {
 	CompanyShareID uint16 `json:"companyShareId"`
 	SubGroup       string `json:"subGroup"`

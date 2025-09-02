@@ -11,4 +11,5 @@ func RegisterShareRoutes(r *gin.RouterGroup, authHandler handlers.AuthHandler, s
 	r.GET("/shares/applied", shareHandler.GetAppliedShares)
 	r.GET("/shares/errors", shareHandler.GetAppliedShareErrors)
 	r.GET("/shares/:id", shareHandler.GetAppliedShareByID)
+	r.POST("/shares/errors/mark-seen", shareHandler.MarkShareErrorsAsSeenByUserID)
 }

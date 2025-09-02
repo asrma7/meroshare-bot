@@ -14,7 +14,6 @@ type ShareRepository interface {
 	GetAppliedShareByAccountIDAndCompanyShareID(accountID string, companyShareID string) (*models.AppliedShare, error)
 	GetAppliedShareErrorsByUserID(userID string) ([]models.AppliedShareError, error)
 	GetAppliedShareErrorsByAppliedShareID(appliedShareID string) (*models.AppliedShareError, error)
-	GetUnseenShareErrorsByUserID(userID string) ([]models.AppliedShareError, error)
 	MarkShareErrorsAsSeenByUserID(userID string) error
 }
 
@@ -74,12 +73,6 @@ func (s *shareRepository) GetAppliedShareErrorsByAppliedShareID(appliedShareID s
 		return nil, err
 	}
 	return &error, nil
-}
-
-func (s *shareRepository) GetUnseenShareErrorsByUserID(userID string) ([]models.AppliedShareError, error) {
-	var errors []models.AppliedShareError
-	err := s.db.Where("user_id = ? AND seen = ?", userID, false).Find(&errors).Error
-	return errors, err
 }
 
 func (s *shareRepository) MarkShareErrorsAsSeenByUserID(userID string) error {

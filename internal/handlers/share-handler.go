@@ -18,6 +18,7 @@ type ShareHandler interface {
 	GetAppliedShares(c *gin.Context)
 	GetAppliedShareErrors(c *gin.Context)
 	GetAppliedShareByID(c *gin.Context)
+	MarkShareErrorsAsSeenByUserID(c *gin.Context)
 	ApplyShare()
 }
 
@@ -94,6 +95,26 @@ func (h *shareHandler) GetAppliedShareByID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "success", "applied_share": appliedShare, "applied_share_error": appliedShareError})
+}
+
+func (h *shareHandler) MarkShareErrorsAsSeenByUserID(c *gin.Context) {
+	userID := c.MustGet("userID").(string)
+	if userID == "" {
+		errResp := errors.ErrorResponse{
+			Type:    "UNAUTHORIZED",
+			Message: "User ID not found in context",
+		}
+		c.JSON(http.StatusUnauthorized, errResp)
+		return
+	}
+
+	if err := h.shareService.MarkShareErrorsAsSeenByUserID(userID); err != nil {
+		errorResp, statusCode := errors.GetErrorResponse(err)
+		c.JSON(statusCode, errorResp)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "success"})
 }
 
 func (h *shareHandler) ApplyShare() {

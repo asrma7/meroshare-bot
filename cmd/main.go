@@ -45,14 +45,16 @@ func main() {
 	shareRepo := repositories.NewShareRepository(db)
 
 	authService := services.NewAuthService(cfg, &userRepo, redisClient)
+	userService := services.NewUserService(db)
 	accountService := services.NewAccountService(&accountRepo)
 	shareService := services.NewShareService(&shareRepo)
 
 	authHandler := handlers.NewAuthHandler(authService)
+	userHandler := handlers.NewUserHandler(userService)
 	accountHandler := handlers.NewAccountHandler(accountService)
 	shareHandler := handlers.NewShareHandler(shareService, accountService)
 
-	routes.RegisterRoutes(r, authHandler, accountHandler, shareHandler)
+	routes.RegisterRoutes(r, authHandler, userHandler, accountHandler, shareHandler)
 
 	c := cron.New()
 	c.AddFunc("0 0 * * *", shareHandler.ApplyShare)

@@ -23,7 +23,6 @@ type ShareService interface {
 	CheckIfShareAlreadyApplied(accountID string, companyShareID string) (bool, error)
 	GetAppliedShareByID(id string) (*models.AppliedShare, *models.AppliedShareError, error)
 	GetAppliedShareErrorsByUserID(userID string) ([]models.AppliedShareError, error)
-	GetUnseenShareErrorsByUserID(userID string) ([]models.AppliedShareError, error)
 	MarkShareErrorsAsSeenByUserID(userID string) error
 	FetchApplicableShares(authorization string) (responses.ApplicableSharesResponse, error)
 	ApplyForShare(account models.Account, share responses.ApplicableShare, authorization string) (map[string]any, error)
@@ -71,10 +70,6 @@ func (s *shareService) CheckIfShareAlreadyApplied(accountID string, companyShare
 
 func (s *shareService) GetAppliedShareErrorsByUserID(userID string) ([]models.AppliedShareError, error) {
 	return s.repo.GetAppliedShareErrorsByUserID(userID)
-}
-
-func (s *shareService) GetUnseenShareErrorsByUserID(userID string) ([]models.AppliedShareError, error) {
-	return s.repo.GetUnseenShareErrorsByUserID(userID)
 }
 
 func (s *shareService) MarkShareErrorsAsSeenByUserID(userID string) error {
