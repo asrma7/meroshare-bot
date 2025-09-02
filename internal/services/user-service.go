@@ -9,15 +9,18 @@ import (
 
 type UserService interface {
 	GetUserDashboard(userID uuid.UUID) (responses.UserDashboard, error)
+	ResetUserLogs(userID uuid.UUID) error
 }
 
 type userService struct {
-	db *gorm.DB
+	db           *gorm.DB
+	shareService ShareService
 }
 
-func NewUserService(db *gorm.DB) UserService {
+func NewUserService(db *gorm.DB, shareService ShareService) UserService {
 	return &userService{
-		db: db,
+		db:           db,
+		shareService: shareService,
 	}
 }
 
@@ -106,4 +109,16 @@ func (s *userService) GetUserDashboard(userID uuid.UUID) (responses.UserDashboar
 	}
 
 	return resp, nil
+}
+
+func (s *userService) ResetUserLogs(userID uuid.UUID) error {
+	err := s.shareService.DeleteAllAppliedShareErrorsByUserID(userID)
+	if err != nil {
+		return err
+	}
+	err = s.shareService.DeleteAllAppliedSharesByUserID(userID)
+	if err != nil {
+		return err
+	}
+	return nil
 }

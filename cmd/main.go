@@ -45,14 +45,14 @@ func main() {
 	shareRepo := repositories.NewShareRepository(db)
 
 	authService := services.NewAuthService(cfg, &userRepo, redisClient)
-	userService := services.NewUserService(db)
 	accountService := services.NewAccountService(&accountRepo)
 	shareService := services.NewShareService(&shareRepo)
+	userService := services.NewUserService(db, shareService)
 
 	authHandler := handlers.NewAuthHandler(authService)
-	userHandler := handlers.NewUserHandler(userService)
 	accountHandler := handlers.NewAccountHandler(accountService)
 	shareHandler := handlers.NewShareHandler(shareService, accountService)
+	userHandler := handlers.NewUserHandler(userService)
 
 	routes.RegisterRoutes(r, authHandler, userHandler, accountHandler, shareHandler)
 

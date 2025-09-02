@@ -13,6 +13,7 @@ import (
 	"github.com/asrma7/meroshare-bot/internal/repositories"
 	"github.com/asrma7/meroshare-bot/internal/requests"
 	"github.com/asrma7/meroshare-bot/internal/responses"
+	"github.com/asrma7/meroshare-bot/pkg/errors"
 	"github.com/google/uuid"
 )
 
@@ -26,6 +27,8 @@ type ShareService interface {
 	MarkShareErrorsAsSeenByUserID(userID string) error
 	FetchApplicableShares(authorization string) (responses.ApplicableSharesResponse, error)
 	ApplyForShare(account models.Account, share responses.ApplicableShare, authorization string) (map[string]any, error)
+	DeleteAllAppliedSharesByUserID(userID uuid.UUID) error
+	DeleteAllAppliedShareErrorsByUserID(userID uuid.UUID) error
 }
 
 type shareService struct {
@@ -50,8 +53,11 @@ func (s *shareService) GetAppliedSharesByUserID(userID string) ([]models.Applied
 
 func (s *shareService) GetAppliedShareByID(id string) (*models.AppliedShare, *models.AppliedShareError, error) {
 	share, err := s.repo.GetAppliedShareByID(id)
-	errors, err := s.repo.GetAppliedShareErrorsByAppliedShareID(id)
 	if err != nil {
+		return nil, nil, errors.NewNotFoundError("Applied share not found")
+	}
+	errors, err := s.repo.GetAppliedShareErrorsByAppliedShareID(id)
+	if err != nil && err.Error() != "record not found" {
 		return nil, nil, err
 	}
 	return share, errors, nil
@@ -74,6 +80,14 @@ func (s *shareService) GetAppliedShareErrorsByUserID(userID string) ([]models.Ap
 
 func (s *shareService) MarkShareErrorsAsSeenByUserID(userID string) error {
 	return s.repo.MarkShareErrorsAsSeenByUserID(userID)
+}
+
+func (s *shareService) DeleteAllAppliedSharesByUserID(userID uuid.UUID) error {
+	return s.repo.DeleteAllAppliedSharesByUserID(userID)
+}
+
+func (s *shareService) DeleteAllAppliedShareErrorsByUserID(userID uuid.UUID) error {
+	return s.repo.DeleteAllAppliedShareErrorsByUserID(userID)
 }
 
 func (s *shareService) FetchApplicableShares(authorization string) (responses.ApplicableSharesResponse, error) {

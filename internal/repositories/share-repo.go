@@ -15,6 +15,8 @@ type ShareRepository interface {
 	GetAppliedShareErrorsByUserID(userID string) ([]models.AppliedShareError, error)
 	GetAppliedShareErrorsByAppliedShareID(appliedShareID string) (*models.AppliedShareError, error)
 	MarkShareErrorsAsSeenByUserID(userID string) error
+	DeleteAllAppliedSharesByUserID(userID uuid.UUID) error
+	DeleteAllAppliedShareErrorsByUserID(userID uuid.UUID) error
 }
 
 type shareRepository struct {
@@ -77,4 +79,12 @@ func (s *shareRepository) GetAppliedShareErrorsByAppliedShareID(appliedShareID s
 
 func (s *shareRepository) MarkShareErrorsAsSeenByUserID(userID string) error {
 	return s.db.Model(&models.AppliedShareError{}).Where("user_id = ?", userID).Update("seen", true).Error
+}
+
+func (s *shareRepository) DeleteAllAppliedSharesByUserID(userID uuid.UUID) error {
+	return s.db.Where("user_id = ?", userID).Delete(&models.AppliedShare{}).Error
+}
+
+func (s *shareRepository) DeleteAllAppliedShareErrorsByUserID(userID uuid.UUID) error {
+	return s.db.Where("user_id = ?", userID).Delete(&models.AppliedShareError{}).Error
 }
