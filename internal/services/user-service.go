@@ -88,6 +88,7 @@ func (s *userService) GetUserDashboard(userID uuid.UUID) (responses.UserDashboar
 		Joins("JOIN accounts a ON ase.account_id = a.id").
 		Joins("JOIN applied_shares as_ ON ase.applied_share_id = as_.id").
 		Where("ase.user_id = ?", userID).
+		Where("ase.seen = ?", false).
 		Order("ase.created_at DESC").
 		Scan(&rows).Error; err != nil {
 		return responses.UserDashboard{}, err
